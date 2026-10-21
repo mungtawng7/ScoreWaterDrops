@@ -1,0 +1,49 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center;
+  background: linear-gradient(160deg, #0a3d62, #1e90ff 60%, #74d7ff);
+  font-family: "Segoe UI", sans-serif; color: #fff; user-select: none;
+}
+main { text-align: center; padding: 12px; }
+h1 { margin: 0 0 10px; text-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.hud { display: flex; gap: 12px; justify-content: center; margin-bottom: 10px; }
+.hud div { background: rgba(0,0,0,.3); padding: 6px 14px; border-radius: 12px; }
+.hud strong { display: block; font-size: 1.4rem; }
+#board {
+  --size: min(11vw, 56px);
+  display: grid; grid-template-columns: repeat(8, var(--size)); grid-template-rows: repeat(8, var(--size));
+  gap: 4px; padding: 8px; background: rgba(255,255,255,.2); border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35); width: max-content; margin: 0 auto;
+}
+.cell {
+  width: var(--size); height: var(--size); display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; background: rgba(255,255,255,.15); cursor: pointer;
+  transition: transform .15s;
+}
+.drop {
+  width: 76%; height: 76%; border-radius: 50%; position: relative;
+  box-shadow: inset -4px -6px 8px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.3);
+  transition: scale .2s, opacity .25s;
+}
+.cell.new .drop { animation: drop-in .3s ease-out; }
+.drop::after {
+  content: ""; position: absolute; top: 15%; left: 22%; width: 22%; height: 22%;
+  background: rgba(255,255,255,.75); border-radius: 50%;
+}
+.c0 .drop { background: radial-gradient(circle at 35% 30%, #e6f9ff, #4fd0ff 50%, #1e90ff); }
+.c1 .drop { background: #2ecc71; }
+.c2 .drop { background: #e74c3c; }
+.c3 .drop { background: #f1c40f; }
+.c4 .drop { background: #9b59b6; }
+.c5 .drop { background: #ff8c42; }
+.cell.selected { background: rgba(255,255,255,.5); transform: scale(1.1); }
+.cell.pop .drop { scale: 0; opacity: 0; }
+.cell:hover:not(.selected) { background: rgba(255,255,255,.3); }
+.cell.empty .drop { visibility: hidden; }
+@keyframes drop-in { from { translate: 0 -40px; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+#message { min-height: 1.4em; }
+button {
+  padding: 8px 20px; border: 0; border-radius: 20px; font-size: 1rem; cursor: pointer;
+  background: #fff; color: #0a3d62; font-weight: 600;
+}
+button:hover { background: #d8f1ff; }
