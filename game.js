@@ -127,7 +127,30 @@ async function trySwap(a, b) {
   busy = false;
 }
 
+let drag = null, dragged = false;
+boardEl.addEventListener("pointerdown", e => {
+  const cell = e.target.closest(".cell");
+  dragged = false;
+  if (!cell || busy) { drag = null; return; }
+  drag = { r: +cell.dataset.r, c: +cell.dataset.c, x: e.clientX, y: e.clientY };
+});
+boardEl.addEventListener("pointermove", e => {
+  if (!drag || busy) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  const need = boardEl.firstElementChild.offsetWidth * 0.4;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < need) return;
+  const horiz = Math.abs(dx) > Math.abs(dy);
+  const a = { r: drag.r, c: drag.c };
+  const b = { r: a.r + (horiz ? 0 : Math.sign(dy)), c: a.c + (horiz ? Math.sign(dx) : 0) };
+  drag = null; dragged = true;
+  if (b.r < 0 || b.c < 0 || b.r >= SIZE || b.c >= SIZE) return;
+  trySwap(a, b);
+});
+["pointerup", "pointercancel", "pointerleave"].forEach(t =>
+  boardEl.addEventListener(t, () => { drag = null; }));
+
 boardEl.addEventListener("click", e => {
+  if (dragged) { dragged = false; return; }
   const cell = e.target.closest(".cell");
   if (!cell || busy) return;
   const p = { r: +cell.dataset.r, c: +cell.dataset.c };
