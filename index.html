@@ -11,12 +11,22 @@
   <h1>Water Drops Saga</h1>
   <div class="hud">
     <div>Score <strong id="score">0</strong></div>
+    <div>Level <strong id="level">1</strong></div>
     <div>Moves <strong id="moves">25</strong></div>
+    <div>Time <strong id="time">60</strong></div>
     <div>Goal <strong id="goal">1000</strong></div>
   </div>
   <div id="board" aria-label="Game board"></div>
   <p id="message">Swap adjacent drops to match 3 or more.</p>
   <button id="restart">New Game</button>
+  <button id="mute">🔊 Sound On</button>
+  <div id="overlay" class="hidden">
+    <div class="panel">
+      <h2 id="ov-title"></h2>
+      <p id="ov-text"></p>
+      <button id="ov-btn"></button>
+    </div>
+  </div>
 </main>
 <script src="game.js"></script>
 </body>

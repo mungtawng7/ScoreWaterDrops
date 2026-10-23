@@ -1,4 +1,82 @@
-const SIZE = 8, TYPES = 6, START_MOVES = 25, GOAL = 1000;
+const SIZE = 8;
+const LEVELS = [
+  { types: 4, moves: 25, goal: 800, time: 75 },
+  { types: 5, moves: 22, goal: 1500, time: 60 },
+  { types: 6, moves: 20, goal: 2500, time: 50 },
+];
+let TYPES = 4, GOAL = 0, level = 0, timeLeft = 0, timer = null, over = false;
+const levelEl = document.getElementById("level");
+const timeEl = document.getElementById("time");
+const overlay = document.getElementById("overlay");
+
+// Sound effects and procedural random music (Web Audio, no assets needed)
+let actx = null, muted = false, musicTimer = null;
+function audio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === "suspended") actx.resume();
+  return actx;
+}
+function tone(freq, dur, type = "sine", vol = 0.15, delay = 0) {
+  if (muted) return;
+  const a = audio(), t = a.currentTime + delay;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(a.destination);
+  o.start(t); o.stop(t + dur);
+}
+const sfx = {
+  move: () => { tone(440, 0.08, "triangle"); tone(660, 0.08, "triangle", 0.12, 0.06); },
+  bad: () => tone(160, 0.2, "sawtooth", 0.1),
+  crush: combo => [0, 1, 2].forEach(i => tone(380 * Math.pow(1.25, i + combo), 0.15, "square", 0.08, i * 0.06)),
+  win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.3, "triangle", 0.2, i * 0.15)),
+  lose: () => [392, 330, 262, 196].forEach((f, i) => tone(f, 0.35, "sawtooth", 0.12, i * 0.22)),
+};
+const SCALE = [0, 2, 4, 7, 9, 12, 14, 16];
+function startMusic() {
+  stopMusic();
+  if (muted) return;
+  const root = 220 * Math.pow(2, Math.floor(Math.random() * 12) / 12);
+  let step = 0;
+  musicTimer = setInterval(() => {
+    const n = SCALE[Math.floor(Math.random() * SCALE.length)];
+    if (Math.random() < 0.8) tone(root * Math.pow(2, n / 12), 0.35, "sine", 0.06);
+    if (step % 4 === 0) tone(root / 2 * Math.pow(2, SCALE[Math.floor(Math.random() * 4)] / 12), 0.6, "triangle", 0.07);
+    step++;
+  }, 280);
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+document.getElementById("mute").addEventListener("click", e => {
+  muted = !muted;
+  e.target.textContent = muted ? "🔇 Sound Off" : "🔊 Sound On";
+  if (muted) stopMusic(); else if (!over) startMusic();
+});
+
+function showOverlay(title, text, btn, cls, action) {
+  document.getElementById("ov-title").textContent = title;
+  document.getElementById("ov-text").textContent = text;
+  const b = document.getElementById("ov-btn");
+  b.textContent = btn;
+  b.onclick = () => { overlay.classList.add("hidden"); action(); };
+  overlay.querySelector(".panel").className = "panel " + cls;
+  overlay.classList.remove("hidden");
+}
+function endGame(won) {
+  over = true; busy = true;
+  clearInterval(timer); stopMusic();
+  if (won) {
+    sfx.win();
+    if (level < LEVELS.length - 1) {
+      showOverlay("MISSION COMPLETE!", `Level ${level + 1} cleared with score ${score}.`, "Next Level", "win", () => { level++; init(); });
+    } else {
+      showOverlay("MISSION COMPLETE!", `You beat all ${LEVELS.length} levels! Final score ${score}.`, "Play Again", "win", () => { level = 0; init(); });
+    }
+  } else {
+    sfx.lose();
+    showOverlay("GAME OVER", `Level ${level + 1}: you didn't reach ${GOAL} in time. Score ${score}.`, "Try Again", "lose", init);
+  }
+}
 const boardEl = document.getElementById("board");
 const scoreEl = document.getElementById("score");
 const movesEl = document.getElementById("moves");
@@ -24,14 +102,32 @@ function findMatches() {
   return hit;
 }
 
+function renderTime() {
+  timeEl.textContent = Math.max(timeLeft, 0);
+  timeEl.classList.toggle("low", timeLeft <= 10);
+}
+
 function init() {
+  const L = LEVELS[level];
+  TYPES = L.types; GOAL = L.goal;
+  renderTime();
   do {
     grid = Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, rnd));
   } while (findMatches().size || !hasMove());
-  score = 0; moves = START_MOVES; selected = null; busy = false;
+  score = 0; moves = L.moves; selected = null; busy = false; over = false;
+  timeLeft = L.time;
   goalEl.textContent = GOAL;
+  levelEl.textContent = level + 1;
   msgEl.textContent = "Swap adjacent drops to match 3 or more.";
   render();
+  clearInterval(timer);
+  timer = setInterval(() => {
+    if (over) return;
+    timeLeft--;
+    renderTime();
+    if (timeLeft <= 0) endGame(false);
+  }, 1000);
+  if (!muted) startMusic();
 }
 
 function render(fresh = new Set()) {
@@ -48,6 +144,7 @@ function render(fresh = new Set()) {
       boardEl.appendChild(cell);
     }
   }
+  renderTime();
   scoreEl.textContent = score;
   movesEl.textContent = moves;
 }
@@ -88,7 +185,9 @@ async function resolve() {
       const cell = boardEl.children[i];
       if (cell) cell.classList.add("pop");
     });
+    sfx.crush(combo);
     await sleep(250);
+    if (over) return;
     score += m.size * 10 * combo;
     const fresh = new Set();
     m.forEach(i => {
@@ -104,26 +203,30 @@ async function resolve() {
 
 async function trySwap(a, b) {
   busy = true;
+  audio();
+  sfx.move();
   swap(a, b);
   selected = null;
   render();
   await sleep(150);
   if (!findMatches().size) {
     swap(a, b);
+    sfx.bad();
     render();
     busy = false;
     return;
   }
   moves--;
   await resolve();
+  if (over) return;
   while (!hasMove()) { // reshuffle when stuck
     do {
       grid = Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, rnd));
     } while (findMatches().size);
   }
   render();
-  if (score >= GOAL) { msgEl.textContent = "You win! Final score " + score; busy = true; return; }
-  if (moves <= 0) { msgEl.textContent = "Out of moves! Score " + score; busy = true; return; }
+  if (score >= GOAL) { endGame(true); return; }
+  if (moves <= 0) { endGame(false); return; }
   busy = false;
 }
 
@@ -160,5 +263,5 @@ boardEl.addEventListener("click", e => {
   else { selected = dist === 0 ? null : p; render(); }
 });
 
-document.getElementById("restart").addEventListener("click", init);
+document.getElementById("restart").addEventListener("click", () => { level = 0; init(); });
 init();
