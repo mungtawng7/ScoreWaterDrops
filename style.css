@@ -5,6 +5,55 @@ body {
   font-family: "Segoe UI", sans-serif; color: #fff; user-select: none;
 }
 main { text-align: center; padding: 12px; }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 64px;
+  max-width: calc(100vw - 32px);
+  margin: 0 0 10px;
+  padding: 10px 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 999px;
+  background: linear-gradient(115deg, #0daec7 0%, #16a877 52%, #087bb8 100%);
+  box-shadow: 0 7px 20px rgba(0,0,0,.28), 0 0 0 4px rgba(255,201,7,.2), inset 0 1px 0 rgba(255,255,255,.4);
+  color: #fff;
+  text-align: left;
+}
+.brand-mark {
+  width: 25px;
+  height: 29px;
+  flex: none;
+  fill: #ffc907;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.25));
+}
+.brand-shine {
+  fill: none;
+  stroke: rgba(255,255,255,.85);
+  stroke-linecap: round;
+  stroke-width: 1.5;
+}
+.brand-copy { display: flex; flex-direction: column; }
+.brand-wordmark {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: .95;
+  letter-spacing: .01em;
+}
+.brand-charity { font-weight: 700; }
+.brand-water { font-weight: 400; }
+.brand-tagline {
+  margin-top: 4px;
+  font-size: .55rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.brand-colon { color: #ffc907; }
 h1 { margin: 0 0 10px; text-shadow: 0 2px 6px rgba(0,0,0,.4); }
 .hud { display: flex; gap: 12px; justify-content: center; margin-bottom: 10px; }
 .hud div { background: rgba(0,0,0,.3); padding: 6px 14px; border-radius: 12px; }
@@ -48,11 +97,55 @@ button {
 }
 button:hover { background: #d8f1ff; }
 #mute { margin-left: 8px; }
+.countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  pointer-events: none;
+}
+.countdown.hidden { display: none; }
+.countdown-number {
+  display: grid;
+  width: 112px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 2px solid rgba(255,255,255,.9);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #fff 0%, #dffcff 44%, #4bbcd0 100%);
+  box-shadow: 0 10px 24px rgba(0,0,0,.28), 0 0 0 5px rgba(255,201,7,.7), inset 0 2px 6px rgba(255,255,255,.8);
+  color: #064361;
+  font-size: 4rem;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(255,255,255,.6);
+}
+.countdown-number.tick { animation: countdown-pop .8s ease-out both; }
+@keyframes countdown-pop {
+  0% { transform: scale(.82); }
+  35% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
 #overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 10; }
 #overlay.hidden { display: none; }
-.panel { background: #0a3d62; border: 3px solid #74d7ff; border-radius: 20px; padding: 24px 36px; box-shadow: 0 10px 40px rgba(0,0,0,.6); animation: pop-in .35s ease-out; }
+.panel { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; background: #0a3d62; border: 3px solid #74d7ff; border-radius: 20px; padding: 24px 36px; box-shadow: 0 10px 40px rgba(0,0,0,.6); animation: pop-in .35s ease-out; }
 .panel h2 { font-size: 2.2rem; margin: 0 0 8px; }
 .panel.win h2 { color: #7dffb0; }
 .panel.lose h2 { color: #ff7b7b; }
+.feedback-choice.hidden { display: none; }
+.feedback.hidden { display: none; }
+.feedback fieldset { margin: 18px 0; padding: 0; border: 0; }
+.feedback legend, .feedback-label { display: block; margin-bottom: 8px; font-weight: 600; }
+.rating-options { display: flex; justify-content: center; gap: 12px; }
+.rating-options label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.rating-options input { accent-color: #ffc907; }
+.feedback textarea { width: 100%; resize: vertical; border: 1px solid #74d7ff; border-radius: 8px; padding: 8px; font: inherit; }
+.feedback-note { font-size: .85rem; opacity: .85; }
+.feedback-status { min-height: 1.2em; color: #ffb3b3; }
+.feedback button { margin-bottom: 12px; }
 .hud strong.low { color: #ff7b7b; }
 @keyframes pop-in { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .countdown-number.tick { animation: none; }
+}

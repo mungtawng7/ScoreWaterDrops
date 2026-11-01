@@ -1,13 +1,20 @@
 const SIZE = 8;
+// Customize the goal numbers for each level here.
 const LEVELS = [
   { types: 4, moves: 25, goal: 800, time: 75 },
-  { types: 5, moves: 22, goal: 1500, time: 60 },
-  { types: 6, moves: 20, goal: 2500, time: 50 },
+  { types: 5, moves: 22, goal: 1300, time: 60 },
+  { types: 6, moves: 20, goal: 1500, time: 50 },
 ];
 let TYPES = 4, GOAL = 0, level = 0, timeLeft = 0, timer = null, over = false;
 const levelEl = document.getElementById("level");
 const timeEl = document.getElementById("time");
 const overlay = document.getElementById("overlay");
+const feedbackForm = document.getElementById("feedback-form");
+const feedbackStatus = document.getElementById("feedback-status");
+const feedbackChoice = document.getElementById("feedback-choice");
+const ovText = document.getElementById("ov-text");
+const ovButton = document.getElementById("ov-btn");
+let feedbackContext = null;
 
 // Sound effects and procedural random music (Web Audio, no assets needed)
 let actx = null, muted = false, musicTimer = null;
@@ -55,13 +62,54 @@ document.getElementById("mute").addEventListener("click", e => {
 
 function showOverlay(title, text, btn, cls, action) {
   document.getElementById("ov-title").textContent = title;
-  document.getElementById("ov-text").textContent = text;
-  const b = document.getElementById("ov-btn");
-  b.textContent = btn;
-  b.onclick = () => { overlay.classList.add("hidden"); action(); };
+  ovText.textContent = text;
+  feedbackForm.hidden = true;
+  feedbackForm.classList.add("hidden");
+  feedbackForm.reset();
+  feedbackChoice.hidden = true;
+  feedbackChoice.classList.add("hidden");
+  ovButton.hidden = false;
+  feedbackStatus.textContent = "";
+  ovButton.textContent = btn;
+  ovButton.onclick = () => { overlay.classList.add("hidden"); action(); };
   overlay.querySelector(".panel").className = "panel " + cls;
   overlay.classList.remove("hidden");
 }
+function promptForFeedback(result, finalScore) {
+  feedbackContext = { result, score: finalScore };
+  feedbackForm.hidden = false;
+  feedbackForm.classList.remove("hidden");
+  feedbackStatus.textContent = "";
+  ovButton.hidden = false;
+}
+document.getElementById("feedback-yes").addEventListener("click", () => {
+  feedbackChoice.hidden = true;
+  feedbackChoice.classList.add("hidden");
+  promptForFeedback("loss", score);
+});
+document.getElementById("feedback-no").addEventListener("click", () => {
+  overlay.classList.add("hidden");
+  init();
+});
+feedbackForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const formData = new FormData(feedbackForm);
+  const rating = Number(formData.get("rating"));
+  const comment = String(formData.get("feedback") || "").trim();
+  try {
+    const saved = JSON.parse(localStorage.getItem("water-drops-feedback") || "[]");
+    if (!Array.isArray(saved)) throw new Error("Stored feedback is not a list.");
+    saved.push({ ...feedbackContext, rating, comment, submittedAt: new Date().toISOString() });
+    localStorage.setItem("water-drops-feedback", JSON.stringify(saved));
+  } catch (error) {
+    console.error("Unable to save game feedback in this browser.", error);
+    feedbackStatus.textContent = "Couldn't save your feedback in this browser. You can try again.";
+    return;
+  }
+  feedbackForm.hidden = true;
+  feedbackForm.classList.add("hidden");
+  ovText.textContent = "Thanks for your feedback! It has been saved on this device.";
+});
 function endGame(won) {
   over = true; busy = true;
   clearInterval(timer); stopMusic();
@@ -71,10 +119,14 @@ function endGame(won) {
       showOverlay("MISSION COMPLETE!", `Level ${level + 1} cleared with score ${score}.`, "Next Level", "win", () => { level++; init(); });
     } else {
       showOverlay("MISSION COMPLETE!", `You beat all ${LEVELS.length} levels! Final score ${score}.`, "Play Again", "win", () => { level = 0; init(); });
+      promptForFeedback("win", score);
     }
   } else {
     sfx.lose();
     showOverlay("GAME OVER", `Level ${level + 1}: you didn't reach ${GOAL} in time. Score ${score}.`, "Try Again", "lose", init);
+    ovButton.hidden = true;
+    feedbackChoice.hidden = false;
+    feedbackChoice.classList.remove("hidden");
   }
 }
 const boardEl = document.getElementById("board");
@@ -84,6 +136,7 @@ const goalEl = document.getElementById("goal");
 const msgEl = document.getElementById("message");
 
 let grid, score, moves, selected, busy;
+let countdownRun = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rnd = () => Math.floor(Math.random() * TYPES);
 
@@ -107,20 +160,37 @@ function renderTime() {
   timeEl.classList.toggle("low", timeLeft <= 10);
 }
 
-function init() {
+async function init() {
   const L = LEVELS[level];
+  const run = ++countdownRun;
+  clearInterval(timer);
+  stopMusic();
   TYPES = L.types; GOAL = L.goal;
+  timeLeft = L.time;
   renderTime();
   do {
     grid = Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, rnd));
   } while (findMatches().size || !hasMove());
-  score = 0; moves = L.moves; selected = null; busy = false; over = false;
-  timeLeft = L.time;
+  score = 0; moves = L.moves; selected = null; busy = true; over = true;
   goalEl.textContent = GOAL;
   levelEl.textContent = level + 1;
   msgEl.textContent = "Swap adjacent drops to match 3 or more.";
   render();
-  clearInterval(timer);
+  const countdown = document.getElementById("countdown");
+  countdown.classList.remove("hidden");
+  const countdownNumber = countdown.querySelector(".countdown-number");
+  for (let count = 3; count > 0; count--) {
+    if (run !== countdownRun) return;
+    countdownNumber.textContent = count;
+    countdownNumber.classList.remove("tick");
+    void countdownNumber.offsetWidth;
+    countdownNumber.classList.add("tick");
+    await sleep(800);
+  }
+  if (run !== countdownRun) return;
+  countdown.classList.add("hidden");
+  busy = false;
+  over = false;
   timer = setInterval(() => {
     if (over) return;
     timeLeft--;

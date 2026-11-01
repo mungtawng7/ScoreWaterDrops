@@ -8,6 +8,16 @@
 </head>
 <body>
 <main>
+  <div class="brand" role="img" aria-label="charity: water, clean water for all">
+    <svg class="brand-mark" viewBox="0 0 24 28" aria-hidden="true">
+      <path d="M12 1C9.2 5.3 3.5 11.4 3.5 17a8.5 8.5 0 0 0 17 0C20.5 11.4 14.8 5.3 12 1Z" />
+      <path class="brand-shine" d="M8 16.5c.2-2 1.5-4 3-5.8" />
+    </svg>
+    <span class="brand-copy">
+      <span class="brand-wordmark"><span class="brand-charity">charity</span><span class="brand-colon">:</span><span class="brand-water">water</span></span>
+      <span class="brand-tagline">clean water for all</span>
+    </span>
+  </div>
   <h1>Water Drops Saga</h1>
   <div class="hud">
     <div>Score <strong id="score">0</strong></div>
@@ -20,10 +30,35 @@
   <p id="message">Swap adjacent drops to match 3 or more.</p>
   <button id="restart">New Game</button>
   <button id="mute">🔊 Sound On</button>
+  <div id="countdown" class="countdown hidden" role="status" aria-live="assertive" aria-atomic="true">
+    <span class="countdown-number"></span>
+  </div>
   <div id="overlay" class="hidden">
     <div class="panel">
       <h2 id="ov-title"></h2>
       <p id="ov-text"></p>
+      <div id="feedback-choice" class="feedback-choice hidden">
+        <p>Would you like to leave feedback and rate the game?</p>
+        <button id="feedback-yes" type="button">Yes</button>
+        <button id="feedback-no" type="button">No</button>
+      </div>
+      <form id="feedback-form" class="feedback hidden">
+        <fieldset>
+          <legend>How would you rate this game?</legend>
+          <div class="rating-options">
+            <label><input type="radio" name="rating" value="1" required> 1</label>
+            <label><input type="radio" name="rating" value="2"> 2</label>
+            <label><input type="radio" name="rating" value="3"> 3</label>
+            <label><input type="radio" name="rating" value="4"> 4</label>
+            <label><input type="radio" name="rating" value="5"> 5</label>
+          </div>
+        </fieldset>
+        <label class="feedback-label" for="feedback-text">What could we improve? (optional)</label>
+        <textarea id="feedback-text" name="feedback" rows="3" maxlength="500"></textarea>
+        <p class="feedback-note">Feedback is saved only in this browser; it is not sent to the game team.</p>
+        <p id="feedback-status" class="feedback-status" role="status" aria-live="polite"></p>
+        <button type="submit">Submit feedback</button>
+      </form>
       <button id="ov-btn"></button>
     </div>
   </div>
